@@ -78,11 +78,10 @@ def spider(future):
         ag[short] += df.loc[20,short]
         ag[long_chg] += df.loc[20,long_chg]
         ag[short_chg] += df.loc[20,short_chg]
-    stat = (ag[long]+ag[short])/ag[vol]
-    ts = (ag[long_chg]-ag[short_chg])/np.abs(ag[long_chg]+ag[short_chg])
+        stat = (ag[long]+ag[short])/ag[vol]
+        ts = (ag[long_chg]-ag[short_chg])/np.abs(ag[long_chg]+ag[short_chg])
     # how to use TS?
-    print(ag)
-    print(stat,ts)
+        print(stat,ts)
     return ag
 
 
