@@ -72,6 +72,7 @@ def spider(future):
     # get_au_sum_daily_df = ak.get_rank_sum_daily(start_day='20201209',end_day='20201210',vars_list=['AU'])
     ag_rank_table_df = ak.get_shfe_rank_table(date=tradedate,vars_list=[future])
     ag = {long:0,short:0,long_chg:0,short_chg:0,vol:0}
+    res = pd.DataFrame(columns=['symbol','vol','stat','ts'])
     for df in ag_rank_table_df.values():
         ag[vol] += df.loc[20,vol]
         ag[long] += df.loc[20,long]
@@ -81,32 +82,32 @@ def spider(future):
         stat = (ag[long]+ag[short])/ag[vol]
         ts = (ag[long_chg]-ag[short_chg])/np.abs(ag[long_chg]+ag[short_chg])
     # how to use TS?
-        print(stat,ts)
-    return ag
+        res = res.append({"symbol":df.iloc[0,0],"vol":df.loc[20,'vol'],"stat":stat,"ts":ts},ignore_index=True)
+    return res
 
 
 if __name__ == "__main__":
-    rank = spider(['AG'])
+    rank = spider("AG")
     print("------------------------------------------------")
-    aurank = time.time_ns()
-    raw_index_df = ak.stock_zh_index_daily(symbol="sz399300")
-    sma1 = range(20,61,4)
-    sma2 = range(180,281,10)
-    results = pd.DataFrame()
-    for SMA1, SMA2 in product(sma1, sma2):
-        data: DataFrame = pd.DataFrame(raw_index_df['close'])
-        data.dropna(inplace=True)
-        data['returns'] = np.log(data['close'] / data['close'].shift(1))
-        data['sma1'] = data['close'].rolling(SMA1).mean()
-        data['sma2'] = data['close'].rolling(SMA2).mean()
-        data.dropna(inplace=True)
-        data['position'] = np.where(data['sma1'] > data['sma2'], 1, 0)
-        data['strategy'] = data['position'].shift(1) * data['returns']
-        data.dropna(inplace=True)
-        perf = np.exp(data[['returns', 'strategy']].sum())
-        results = results.append(
-            pd.DataFrame({'SMA1': SMA1, 'SMA2': SMA2, 'market': perf['returns'], 'strategy': perf['strategy']},
-                         index=[0]), ignore_index=True)
-    print(results.info())
-    print(results.sort_values('strategy',ascending=False))
-    results.shift()
+    # aurank = time.time_ns()
+    # raw_index_df = ak.stock_zh_index_daily(symbol="sz399300")
+    # sma1 = range(20,61,4)
+    # sma2 = range(180,281,10)
+    # results = pd.DataFrame()
+    # for SMA1, SMA2 in product(sma1, sma2):
+    #     data: DataFrame = pd.DataFrame(raw_index_df['close'])
+    #     data.dropna(inplace=True)
+    #     data['returns'] = np.log(data['close'] / data['close'].shift(1))
+    #     data['sma1'] = data['close'].rolling(SMA1).mean()
+    #     data['sma2'] = data['close'].rolling(SMA2).mean()
+    #     data.dropna(inplace=True)
+    #     data['position'] = np.where(data['sma1'] > data['sma2'], 1, 0)
+    #     data['strategy'] = data['position'].shift(1) * data['returns']
+    #     data.dropna(inplace=True)
+    #     perf = np.exp(data[['returns', 'strategy']].sum())
+    #     results = results.append(
+    #         pd.DataFrame({'SMA1': SMA1, 'SMA2': SMA2, 'market': perf['returns'], 'strategy': perf['strategy']},
+    #                      index=[0]), ignore_index=True)
+    # print(results.info())
+    # print(results.sort_values('strategy',ascending=False))
+    # results.shift()
