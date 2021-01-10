@@ -1,4 +1,3 @@
-
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -9,9 +8,48 @@ import datetime
 import time
 from itertools import product
 
-
 # shfe_text = ak.match_main_contract(exchange="shfe")
 from pandas import DataFrame
+
+
+# 海龟交易法，顺势交易，逆鞅方法的应用
+def turtle():
+    ag_df = ak.futures_zh_minute_sina(symbol="AG0",period='30')
+    # end_date = datetime.datetime.today().strftime('%Y%m%d')
+    # ag_df = ak.get_futures_daily(start_date='20190101',end_date=end_date,)
+    ag_df[['open','high','low','close']] = ag_df[['open','high','low','close']].astype(float)
+    atr(ag_df)
+    donchian(ag_df)
+    return ag_df
+
+
+def atr(df):
+    df['tr1'] = df['high']-df['low']
+    df['tr2'] = df['high']-df['close'].shift(1)
+    df['tr3'] = df['low']-df['close'].shift(1)
+    df['TR'] = df[['tr1', 'tr2', 'tr3']].max(axis=1)
+    df['ATR'] = df['TR'].rolling(window=20).mean()
+
+def donchian(df):
+    df['d_high'] = df['high'].rolling(window=20).max()
+    df['d_low'] = df['low'].rolling(window=20).min()
+
+
+
+# 网格，左侧交易，适用于震荡行情，或者波动较大，同时又有上下界的品种，没有止损
+def grid():
+    """
+    需要确定元素：
+    1、网格间隔
+    2、每次操作仓位
+    3、止盈策略
+    :return:
+    """
+    end_date = datetime.datetime.today()
+    start_date = datetime.datetime.today() - datetime.timedelta(days=30)
+    future_df = ak.get_futures_daily()
+    # future_df = ak.futures_zh_minute_sina
+    # todo
 
 
 def get_agm():
@@ -53,10 +91,10 @@ def spider(future):
     trade_calendar = ak.tool_trade_date_hist_sina()
     nowdatetime = datetime.datetime.now()
 
-    if int(nowdatetime.strftime("%H%M"))>1630:
+    if int(nowdatetime.strftime("%H%M")) > 1630:
         pass
     else:
-        nowdatetime = nowdatetime-datetime.timedelta(days=1)
+        nowdatetime = nowdatetime - datetime.timedelta(days=1)
 
     for counts in range(30):
         if nowdatetime.strftime("%Y-%m-%d") in trade_calendar['trade_date'].values:
@@ -70,18 +108,18 @@ def spider(future):
 
     # get_ag_sum_daily_df = ak.get_rank_sum_daily(start_day='20201209',end_day='20201210',vars_list=['AG'])
     # get_au_sum_daily_df = ak.get_rank_sum_daily(start_day='20201209',end_day='20201210',vars_list=['AU'])
-    ag_rank_table_df = ak.get_shfe_rank_table(date=tradedate,vars_list=[future])
-    ag = {long:0,short:0,long_chg:0,short_chg:0,vol:0}
+    ag_rank_table_df = ak.get_shfe_rank_table(date=tradedate, vars_list=[future])
+    ag = {long: 0, short: 0, long_chg: 0, short_chg: 0, vol: 0}
     for df in ag_rank_table_df.values():
-        ag[vol] += df.loc[20,vol]
-        ag[long] += df.loc[20,long]
-        ag[short] += df.loc[20,short]
-        ag[long_chg] += df.loc[20,long_chg]
-        ag[short_chg] += df.loc[20,short_chg]
-        stat = (ag[long]+ag[short])/ag[vol]
-        ts = (ag[long_chg]-ag[short_chg])/np.abs(ag[long_chg]+ag[short_chg])
-    # how to use TS?
-        print(stat,ts)
+        ag[vol] += df.loc[20, vol]
+        ag[long] += df.loc[20, long]
+        ag[short] += df.loc[20, short]
+        ag[long_chg] += df.loc[20, long_chg]
+        ag[short_chg] += df.loc[20, short_chg]
+        stat = (ag[long] + ag[short]) / ag[vol]
+        ts = (ag[long_chg] - ag[short_chg]) / np.abs(ag[long_chg] + ag[short_chg])
+        # how to use TS?
+        print(stat, ts)
     return ag
 
 
@@ -90,8 +128,8 @@ if __name__ == "__main__":
     print("------------------------------------------------")
     aurank = time.time_ns()
     raw_index_df = ak.stock_zh_index_daily(symbol="sz399300")
-    sma1 = range(20,61,4)
-    sma2 = range(180,281,10)
+    sma1 = range(20, 61, 4)
+    sma2 = range(180, 281, 10)
     results = pd.DataFrame()
     for SMA1, SMA2 in product(sma1, sma2):
         data: DataFrame = pd.DataFrame(raw_index_df['close'])
@@ -108,5 +146,5 @@ if __name__ == "__main__":
             pd.DataFrame({'SMA1': SMA1, 'SMA2': SMA2, 'market': perf['returns'], 'strategy': perf['strategy']},
                          index=[0]), ignore_index=True)
     print(results.info())
-    print(results.sort_values('strategy',ascending=False))
+    print(results.sort_values('strategy', ascending=False))
     results.shift()
