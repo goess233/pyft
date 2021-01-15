@@ -17,36 +17,42 @@ STOP_ATR = 2
 EXIT_BREAKOUT = 10
 EXIT_OFFSET_ATR = 0
 MAX_UNITS = 4
-ATR_WIN = 20
+ATR_WIN = 14
+
 
 # 海龟交易法，顺势交易，逆鞅方法的应用
 def turtle():
     # ag_df = ak.futures_zh_minute_sina(symbol="AG0",period='60')  # 37 frames a day if period equals 15
     # end_date = datetime.datetime.today().strftime('%Y%m%d')
-    # ag_df = ak.get_futures_daily(start_date='20190101',end_date=end_date,)
-    ag_df = ak.futures_foreign_hist(symbol="XAG")
-    ag_df = ag_df.iloc[-365:]
-    ag_df[['open','high','low','close']] = ag_df[['open','high','low','close']].astype(float)
+    shfe_df = ak.get_futures_daily(start_date='20200101', end_date='20210115', market='shfe')
+    # ag_df = ak.futures_foreign_hist(symbol="XAG")
+    # ag_df = _df.iloc[-365:]
+    ag_df = shfe_df[shfe_df['symbol'] == 'AG2102']
+    ag_current_price = ak.futures_zh_spot("AG2102", market="CF").loc[0, 'current_price']
+    if ag_df['close'].iloc[-1] == '':
+        ag_df['close'].iloc[-1] = ag_current_price
+    ag_df[['open', 'high', 'low', 'close']] = ag_df[['open', 'high', 'low', 'close']].astype(float, "ignore")
     atr(ag_df)
     donchian(ag_df)
-    parameters = {}
-    parameters['long_add']= ag_df['entry_high']+ag_df['ATR']*ADD_ATR
+    parameters = {'long_exit1': ag_df['exit_low'].iloc[-1], 'short_exit1': ag_df['exit_high'].iloc[-1]}
+    # parameters.append ag_df['entry_high']+ag_df['ATR']*ADD_ATR
     print(parameters)
     return ag_df
 
 
 def atr(df):
     temp = pd.DataFrame()
-    temp['tr1'] = df['high']-df['low']
-    temp['tr2'] = df['high']-df['close'].shift(1)
-    temp['tr3'] = df['low']-df['close'].shift(1)
+    temp['tr1'] = df['high'] - df['low']
+    temp['tr2'] = df['high'] - df['close'].shift(1)
+    temp['tr3'] = df['low'] - df['close'].shift(1)
     df['TR'] = temp[['tr1', 'tr2', 'tr3']].max(axis=1)
     df['ATR'] = df['TR'].rolling(window=ATR_WIN).mean()
+
 
 def donchian(df):
     df['entry_high'] = df['high'].rolling(window=ENTRY_BREAKOUT).max()
     df['entry_low'] = df['low'].rolling(window=ENTRY_BREAKOUT).min()
-    df['entry_mid'] = (df['entry_high']+df['entry_low'])/2
+    df['entry_mid'] = (df['entry_high'] + df['entry_low']) / 2
     df['exit_high'] = df['high'].rolling(window=EXIT_BREAKOUT).max()
     df['exit_low'] = df['low'].rolling(window=EXIT_BREAKOUT).min()
     # long_open,short_open
@@ -70,8 +76,8 @@ def grid():
 
 def get_agm():
     fdata = ak.futures_zh_spot("AG2102", market="CF")
-    subscribe_list = ak.hf_subscribe_exchange_symbol()
-    futures_hf_spot_df = ak.futures_hf_spot(subscribe_list)
+    # subscribe_list = ak.hf_subscribe_exchange_symbol()
+    # futures_hf_spot_df = ak.futures_hf_spot(subscribe_list)
     return fdata
 
 
@@ -164,6 +170,5 @@ if __name__ == "__main__":
     # print(results.info())
     # print(results.sort_values('strategy', ascending=False))
     # results.shift()
-    df = turtle()
-    print(df.iloc[-1])
-
+    test = turtle()
+    # print(df.iloc[-1])
