@@ -24,13 +24,13 @@ ATR_WIN = 14
 def turtle():
     # ag_df = ak.futures_zh_minute_sina(symbol="AG0",period='60')  # 37 frames a day if period equals 15
     # end_date = datetime.datetime.today().strftime('%Y%m%d')
-    shfe_df = ak.get_futures_daily(start_date='20200101', end_date='20210115', market='shfe')
-    # ag_df = ak.futures_foreign_hist(symbol="XAG")
-    # ag_df = _df.iloc[-365:]
-    ag_df = shfe_df[shfe_df['symbol'] == 'AG2102']
-    ag_current_price = ak.futures_zh_spot("AG2102", market="CF").loc[0, 'current_price']
-    if ag_df['close'].iloc[-1] == '':
-        ag_df['close'].iloc[-1] = ag_current_price
+    # shfe_df = ak.get_futures_daily(start_date='20200101', end_date='20210115', market='shfe')
+    ag_df = ak.futures_foreign_hist(symbol="XAG")
+    ag_df = ag_df.iloc[-365:]
+    # ag_df = shfe_df[shfe_df['symbol'] == 'AG2102']
+    # ag_current_price = ak.futures_zh_spot("AG2102", market="CF").loc[0, 'current_price']
+    # if ag_df['close'].iloc[-1] == '':
+    #     ag_df['close'].iloc[-1] = ag_current_price
     ag_df[['open', 'high', 'low', 'close']] = ag_df[['open', 'high', 'low', 'close']].astype(float, "ignore")
     atr(ag_df)
     donchian(ag_df)
