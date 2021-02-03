@@ -128,10 +128,10 @@ def spider(future):
         print("no trade day found!")
         return
 
-    # get_ag_sum_daily_df = ak.get_rank_sum_daily(start_day='20201209',end_day='20201210',vars_list=['AG'])
-    # get_au_sum_daily_df = ak.get_rank_sum_daily(start_day='20201209',end_day='20201210',vars_list=['AU'])
     ag_rank_table_df = ak.get_shfe_rank_table(date=tradedate, vars_list=[future])
     ag = {long: 0, short: 0, long_chg: 0, short_chg: 0, vol: 0}
+
+    res_df = pd.DataFrame(columns=['name', 'stat', 'ts', long, long_chg, short, short_chg, vol])
     for df in ag_rank_table_df.values():
         ag['name'] = df.iloc[0,0]
         ag[vol] = df.loc[20, vol]
@@ -143,16 +143,30 @@ def spider(future):
         ag['stat'] = (ag[long] + ag[short]) / ag[vol]
         # 情绪指标ts，绝对值越大说明情绪越激烈
         ag['ts'] = (ag[long_chg] - ag[short_chg]) / np.abs(ag[long_chg] + ag[short_chg])
-        print(ag['name'], ag['stat'], ag['ts'])
+        res_df = res_df.append(ag, ignore_index=True)
+        print(ag['name'], ag['stat'], ag['ts'], ag[long], ag[long_chg], ag[short], ag[short_chg], ag[vol])
+    return res_df
 
 
 class FutureAG:
     def __init__(self):
+        for con in ak.match_main_contract(exchange="shfe").split(','):
+            if con.strip("nf_").startswith("AG"):
+                self.ag_main = con.strip("nf_")
+        if not getattr(self, "ag_main"):
+            raise Exception("No_contract_found")
+        print(f"主力合约{self.ag_main}")
 
-        spider("AG")
-
+        today = datetime.datetime.now().strftime("%Y%m%d")
+        futures_df = ak.get_futures_daily(start_date="20200701", end_date=today, market="SHFE")
+        self.ag_df = futures_df[futures_df['symbol'] == self.ag_main]
+        self.ag_df.index = range(1, len(self.ag_df) + 1)
+        self.spider_df = spider("AG")
+        atr(self.ag_df)
+        self.unit = 2500/(15*self.ag_df['ATR'].iloc[-1])
+        print(f"unit={self.unit}")
 
 
 if __name__ == "__main__":
-    test = spider("AG")
+    test = FutureAG()
 
